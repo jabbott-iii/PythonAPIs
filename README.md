@@ -1,4 +1,4 @@
-# PythonMicroServices
-Microservices and API's written in python.
+# PythonAPIs
+API's written in python.
 
-\n \n ["uv"](https://docs.astral.sh/uv/getting-started/installation/) instead of pip
+["uv"](https://docs.astral.sh/uv/getting-started/installation/) instead of pip
