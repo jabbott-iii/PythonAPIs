@@ -1,8 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
+from httpx import post
 from . import schemas
 from . import db
 from sqlalchemy.ext.asyncio import AsyncSession
 from contextlib import asynccontextmanager
+from sqlalchemy import select
 
 @asynccontextmanager                                                                                # define lifespan event
 async def lifespan(app: FastAPI):                                                                   # lifespan event to create database tables on startup
@@ -11,20 +13,38 @@ async def lifespan(app: FastAPI):                                               
 
 app = FastAPI(lifespan=lifespan)                                                                    # pass lifespan to FastAPI instance
 
-textposts = {}                                                                                      # in-memory storage for text posts
+@app.post("/upload")                                                                               # endpoint to upload a file
+async def upload_file(
+    file: UploadFile = File(...),
+    caption: str = Form(""),
+    session: AsyncSession = Depends(db.get_async_session)                                           # database session dependency
+):
+    post = db.Post(                                                                                 # implementation of file upload endpoint goes here
+        caption=caption,
+        url=f"/files/{file.filename}",
+        file_type=file.content_type,
+        file_name=file.filename
+    )                                                                                            
+    session.add(post)                                                                               # add post to session
+    await session.commit()                                                                          # commit session to save post
+    await session.refresh(post)                                                                     # refresh session to get updated post
+    return post                                                                                     # return the created post
 
-@app.get("/posts")                                                                                  # get all posts
-def get_posts():
-    return textposts
+@app.get("/feed")                                                                                   # endpoint to get all posts
+async def get_feed(
+    session: AsyncSession = Depends(db.get_async_session)
+):
+    result = await session.execute(select(db.Post).order_by(db.Post.created_at.desc()))             # select all posts from database and orders by descending timestamp
+    posts = [row[0] for row in result.all()]                                                        # fetch all posts and convert to list
 
-@app.get("/posts/{post_id}")                                                                        # get specific post by id
-def get_post(post_id: int) -> schemas.PostResponse:                                                 # specify response model to avoid returning extra data
-    if post_id not in textposts:                                                                    # check if post exists
-        raise HTTPException(status_code=404, detail="Post not found")                               # raise 404 if not found
-    return textposts.get(post_id)                                                                   # return the requested post
-
-@app.post("/posts")                                                                                 # create a new post
-def create_post(post: schemas.PostCreate) -> schemas.PostResponse:                                  # specify response model to avoid returning extra data
-    new_post = {"title": post.title, "content": post.content, "published": post.published}          # create new post dictionary
-    textposts[max(textposts.keys(), default=0) + 1] = new_post                                      # add new post to in-memory storage with incremented id
-    return new_post                                                                                 # return the newly created post
+    posts_data = []                                                                                 # convert posts to list of dictionaries
+    for post in posts:                                                                              # Defines the dictionary format that will be in the list
+        posts_data.append({
+            "id": str(post.id),
+            "caption": post.caption,
+            "url": post.url,
+            "file_type": post.file_type,
+            "file_name": post.file_name,
+            "created_at": post.created_at.isoformat()
+        })
+        return {"posts": posts_data}
