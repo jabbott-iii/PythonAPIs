@@ -1,5 +1,5 @@
 import fastapi
-import schemas
+from . import schemas
 
 app = fastapi.FastAPI()
 
