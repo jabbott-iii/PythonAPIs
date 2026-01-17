@@ -1,11 +1,11 @@
 from pydantic import BaseModel
 
-class PostCreate(BaseModel):
-    title: str
-    content: str
-    published: bool = True
+class PostCreate(BaseModel):                                             # schema for creating a post
+    title: str                                                           # title of the post
+    content: str                                                         # content of the post
+    published: bool = True                                               # published status, defaults to True
 
-class PostResponse(BaseModel):
-    title: str
-    content: str
-    published: bool = True
+class PostResponse(BaseModel):                                           # schema for responding with a post
+    title: str                                                           # title of the post
+    content: str                                                         # content of the post
+    published: bool = True                                               # published status, defaults to True
