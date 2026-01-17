@@ -1,7 +1,7 @@
-import fastapi
+from fastapi import FastAPI, HTTPException
 from . import schemas
 
-app = fastapi.FastAPI()
+app = FastAPI()
 
 textposts = {}  
 
@@ -12,7 +12,7 @@ def get_posts():
 @app.get("/posts/{post_id}")
 def get_post(post_id: int) -> schemas.PostResponse:
     if post_id not in textposts:
-        raise fastapi.HTTPException(status_code=404, detail="Post not found")
+        raise HTTPException(status_code=404, detail="Post not found")
     return textposts.get(post_id)
 
 @app.post("/posts")

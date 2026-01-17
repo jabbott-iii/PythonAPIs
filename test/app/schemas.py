@@ -1,11 +1,11 @@
-import pydantic
+from pydantic import BaseModel
 
-class PostCreate(pydantic.BaseModel):
+class PostCreate(BaseModel):
     title: str
     content: str
     published: bool = True
 
-class PostResponse(pydantic.BaseModel):
+class PostResponse(BaseModel):
     title: str
     content: str
     published: bool = True
