@@ -1,6 +1,6 @@
 import pydantic
 
-class PostCreateSchema(pydantic.BaseModel):
+class PostCreate(pydantic.BaseModel):
     title: str
     content: str
     published: bool = True
