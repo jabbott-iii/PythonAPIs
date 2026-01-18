@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from contextlib import asynccontextmanager
 from sqlalchemy import select
 from . import images
-from imagekitio._models import UploadFileRequestOptions
+import imagekitio
 import os
 import uuid
 import shutil
@@ -31,26 +31,25 @@ async def upload_file(
             temp_file_path = temp_file.name
             shutil.copyfileobj(file.file, temp_file)                                               # copy uploaded file to temporary file
 
-        upload_response = images.imagekit.upload_file(                                              # upload file to ImageKit
-            file=open(temp_file_path, "rb"),
-            file_name = file.filename,
-            options = UploadFileRequestOptions(
-                use_unique_file_name = True,
-                tags = ['BackendUpload'],
+        upload_response = images.imagekit.files.upload(                                              # upload file to ImageKit
+            file = open(temp_file_path, "rb"),
+            file_name = file.filename
             )
-        )
 
-    finally:
-        if upload_response.status_code == 200 and temp_file_path and os.path.exists(temp_file_path):        # ensure temporary file exists and upload succeeded
-            os.remove(temp_file_path)                                                                       # remove temporary file
+        if upload_response.http_status == 200:                                                              # ensure upload succeeded
             post = db.Post(                                                                                 # implementation of file upload endpoint goes here
                 caption = caption,
-                url = upload_response.response.get("url"),
-                file_type = file.content_type,
-                file_name = file.filename
+                url = upload_response.url,
+                file_type = "video" if file.content_type.startswith("video/") else "image",
+                file_name = upload_response.name
     )
         else:
-            raise HTTPException(status_code=500, detail="Failed to upload file to ImageKit")                                                                                           
+            raise HTTPException(status_code=500, detail="Failed to upload file to ImageKit")
+        
+    finally:
+        if temp_file_path and os.path.exists(temp_file_path):
+            file.file.close()                                                             # close uploaded file
+            os.remove(temp_file_path)                                                                       # remove temporary file                                                                  
     
     session.add(post)                                                                               # add post to session
     await session.commit()                                                                          # commit session to save post
