@@ -1,10 +1,15 @@
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
-from httpx import post
 from . import schemas
 from . import db
 from sqlalchemy.ext.asyncio import AsyncSession
 from contextlib import asynccontextmanager
 from sqlalchemy import select
+from . import images
+from imagekitio._models import UploadFileRequestOptions
+import os
+import uuid
+import shutil
+import tempfile
 
 @asynccontextmanager                                                                                # define lifespan event
 async def lifespan(app: FastAPI):                                                                   # lifespan event to create database tables on startup
@@ -19,12 +24,34 @@ async def upload_file(
     caption: str = Form(""),
     session: AsyncSession = Depends(db.get_async_session)                                           # database session dependency
 ):
-    post = db.Post(                                                                                 # implementation of file upload endpoint goes here
-        caption=caption,
-        url=f"/files/{file.filename}",
-        file_type=file.content_type,
-        file_name=file.filename
-    )                                                                                            
+    temp_file_path = None
+
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as temp_file:      # create temporary file
+            temp_file_path = temp_file.name
+            shutil.copyfileobj(file.file, temp_file)                                               # copy uploaded file to temporary file
+
+        upload_response = images.imagekit.upload_file(                                              # upload file to ImageKit
+            file=open(temp_file_path, "rb"),
+            file_name = file.filename,
+            options = UploadFileRequestOptions(
+                use_unique_file_name = True,
+                tags = ['BackendUpload'],
+            )
+        )
+
+    finally:
+        if upload_response.status_code == 200 and temp_file_path and os.path.exists(temp_file_path):        # ensure temporary file exists and upload succeeded
+            os.remove(temp_file_path)                                                                       # remove temporary file
+            post = db.Post(                                                                                 # implementation of file upload endpoint goes here
+                caption = caption,
+                url = upload_response.response.get("url"),
+                file_type = file.content_type,
+                file_name = file.filename
+    )
+        else:
+            raise HTTPException(status_code=500, detail="Failed to upload file to ImageKit")                                                                                           
+    
     session.add(post)                                                                               # add post to session
     await session.commit()                                                                          # commit session to save post
     await session.refresh(post)                                                                     # refresh session to get updated post
