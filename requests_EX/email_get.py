@@ -5,7 +5,7 @@ params = {'page': 2} # Example query parameter
 
 response = requests.get(url, params=params) # Send GET request with parameters
 print('Final URL:', response.url)
-print("Status Code:", response.status_code) # Print status code
+print("Status Code:", response.status_code)
 
 data = response.json() # Parse JSON response
 
