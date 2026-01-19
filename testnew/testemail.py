@@ -1,14 +1,13 @@
 import requests
 
-url = 'https://reqres.in/api/users/'
+url = 'https://jsonplaceholder.typicode.com/users/'
 params = {'page': 2} # Example query parameter
 
 response = requests.get(url, params=params) # Send GET request with parameters
 print('Final URL:', response.url)
-
-response.raise_for_status()  # Raise an error for bad responses
+print("Status Code:", response.status_code) # Print status code
 
 data = response.json() # Parse JSON response
 
-for user in data.get('data', []): # Iterate through user data
-    print(f"ID: {user['id']}, Email: {user['email']}")
+for user in data: # Iterate through user data
+    print(f"ID: {user['id']}, Name: {user['name']}, Email: {user['email']}")
