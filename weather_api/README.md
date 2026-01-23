@@ -1,5 +1,8 @@
-openmeteo wrapper for top 10 cities population-wise 01/2026.
+## openmeteo wrapper for top 10 cities population-wise 01/2026.
 
+Persistent hourly data
+
+## [lat / long / city]
 40.71, 74.01 - New York
 34.05, 118.24 - Los Angeles
 41.88, 87.63 - Chicago
