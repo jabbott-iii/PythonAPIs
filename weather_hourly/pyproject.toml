@@ -1,5 +1,5 @@
 [project]
-name = "weather-api"
+name = "weather-hourly"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -13,5 +13,5 @@ dependencies = [
     "pandas>=3.0.0",
     "requests-cache>=1.2.1",
     "retry-requests>=2.0.0",
-    "uvicorn>=0.40.0",
+    "uvicorn>=0.40.0"
 ]
