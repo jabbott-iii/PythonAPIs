@@ -1,5 +1,5 @@
-# syntax=docker/dockerfile:1.7
-FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim
+# Stage 1 build
+FROM ghcr.io/astral-sh/uv:python3.14-trixie-slim AS builder
 LABEL authors="jabbott-iii"
 
 WORKDIR /app
@@ -21,15 +21,25 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # Then, add the rest of the project source code and install it
 # Installing separately from its dependencies allows optimal layer caching
-COPY . /app
+COPY . .
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked
 
-ENV PATH="/opt/venv/bin:${PATH}"
+
+# Stage 2 production
+FROM ghcr.io/astral-sh/uv:python3.14-trixie-slim
+
+WORKDIR /app
+
+COPY --from=builder /app/.venv .
+COPY --from=builder /app/app .
+COPY --from=builder /app/main.py .
+
+ENV PATH="/opt/.venv/bin:${PATH}"
+# Webserver port
 ENV PORT=8000
-
 EXPOSE 8000
-
+# Erase default entry point set by docker automatically
 ENTRYPOINT []
-# Assumes your FastAPI app is declared in main.py as: app = FastAPI()
+
 CMD ["uv", "run", "main.py", "--host", "0.0.0.0"]
