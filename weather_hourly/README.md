@@ -1,4 +1,4 @@
-## openmeteo wrapper for top 10 cities population-wise 01/2026.
+## openmeteo api data for top 10 cities population-wise 01/2026.
 
 ## [lat / long / city]
 40.71, 74.01 - New York
